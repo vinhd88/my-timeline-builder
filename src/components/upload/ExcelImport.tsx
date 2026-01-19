@@ -5,12 +5,15 @@ import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Upload } from 'lucide-react';
 import { useTimelineStore } from '@/store/timelineStore';
+import { useThemeStore } from '@/store/themeStore';
 import { TimelineRow } from '@/types/timeline';
 
 export function ExcelImport() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const setRows = useTimelineStore((state) => state.setRows);
     const setViewport = useTimelineStore((state) => state.setViewport);
+    const clearMilestones = useTimelineStore((state) => state.clearMilestones);
+    const { primaryColor, secondaryColor } = useThemeStore();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -83,14 +86,20 @@ export function ExcelImport() {
                 startDate,
                 endDate,
                 progress: 0, // Default to 0, or could read from excel if added later
+                color: type === 'phase' ? primaryColor : secondaryColor,
                 indent,
                 isExpanded
             };
+
+            console.log(`Creating row: ${title}, type: ${type}, color: ${timelineRow.color}, primaryColor: ${primaryColor}, secondaryColor: ${secondaryColor}`);
 
             newRows.push(timelineRow);
         });
 
         if (newRows.length > 0) {
+            // Clear existing milestones when importing new data
+            clearMilestones();
+
             setRows(newRows);
             console.log("Imported rows:", newRows);
 

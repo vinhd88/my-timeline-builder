@@ -12,10 +12,11 @@ interface MilestoneDialogProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (milestone: Omit<Milestone, 'id'> | Milestone) => void;
+    onDelete?: (id: string) => void;
     milestone?: Milestone;
 }
 
-export function MilestoneDialog({ isOpen, onClose, onSave, milestone }: MilestoneDialogProps) {
+export function MilestoneDialog({ isOpen, onClose, onSave, onDelete, milestone }: MilestoneDialogProps) {
     const [label, setLabel] = useState("");
     const [date, setDate] = useState("");
     const [color, setColor] = useState("#f59e0b");
@@ -50,6 +51,13 @@ export function MilestoneDialog({ isOpen, onClose, onSave, milestone }: Mileston
         onClose();
     };
 
+    const handleDelete = () => {
+        if (milestone && onDelete) {
+            onDelete(milestone.id);
+            onClose();
+        }
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[425px]">
@@ -73,7 +81,12 @@ export function MilestoneDialog({ isOpen, onClose, onSave, milestone }: Mileston
                         </div>
                     </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="flex justify-between">
+                    {milestone && onDelete && (
+                        <Button type="button" variant="destructive" onClick={handleDelete}>
+                            Delete
+                        </Button>
+                    )}
                     <Button type="submit" onClick={handleSave}>Save changes</Button>
                 </DialogFooter>
             </DialogContent>

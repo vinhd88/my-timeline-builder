@@ -13,7 +13,7 @@ import { MilestoneDialog } from "@/components/timeline/MilestoneDialog";
 import { Milestone } from "@/types/timeline";
 
 export default function Home() {
-  const { rows, milestones, startDate, endDate, viewMode, setViewMode, addMilestone, updateMilestone } = useTimelineStore();
+  const { rows, milestones, startDate, endDate, viewMode, setViewMode, addMilestone, updateMilestone, deleteMilestone } = useTimelineStore();
   const theme = useThemeStore();
 
   const [isMilestoneDialogOpen, setIsMilestoneDialogOpen] = useState(false);
@@ -44,6 +44,10 @@ export default function Home() {
     } else {
       addMilestone(data);
     }
+  };
+
+  const handleDeleteMilestone = (id: string) => {
+    deleteMilestone(id);
   };
 
   return (
@@ -86,6 +90,7 @@ export default function Home() {
           isOpen={isMilestoneDialogOpen}
           onClose={() => setIsMilestoneDialogOpen(false)}
           onSave={handleSaveMilestone}
+          onDelete={handleDeleteMilestone}
           milestone={editingMilestone}
         />
       </div>

@@ -185,10 +185,10 @@ export function TimelineContainer({ onMilestoneClick }: TimelineContainerProps) 
                                             style={{
                                                 left: getX(new Date(row.startDate)),
                                                 width: getWidth(new Date(row.startDate), new Date(row.endDate)),
-                                                backgroundColor: row.color || (row.type === 'phase' ? primaryColor : (row.type === 'task' ? secondaryColor + '80' : secondaryColor)),
-                                                background: row.type === 'phase'
-                                                    ? `linear-gradient(90deg, ${row.color || primaryColor} 0%, ${row.color || primaryColor}90 100%)`
-                                                    : undefined
+                                                ...(row.type === 'phase'
+                                                    ? { background: `linear-gradient(90deg, ${row.color || primaryColor} 0%, ${row.color || primaryColor}90 100%)` }
+                                                    : { backgroundColor: row.color || secondaryColor }
+                                                )
                                             }}
                                         >
                                             {row.progress > 0 && (

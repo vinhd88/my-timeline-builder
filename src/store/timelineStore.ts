@@ -18,6 +18,7 @@ interface TimelineState {
     addMilestone: (milestone: Omit<Milestone, 'id'>) => void;
     updateMilestone: (id: string, updates: Partial<Milestone>) => void;
     deleteMilestone: (id: string) => void;
+    clearMilestones: () => void;
 
     setViewMode: (mode: ViewMode) => void;
     setViewport: (start: Date, end: Date) => void;
@@ -122,6 +123,8 @@ export const useTimelineStore = create<TimelineState>((set) => ({
     deleteMilestone: (id) => set((state) => ({
         milestones: state.milestones.filter(m => m.id !== id)
     })),
+
+    clearMilestones: () => set({ milestones: [] }),
 
     setViewMode: (mode) => set({ viewMode: mode }),
 
