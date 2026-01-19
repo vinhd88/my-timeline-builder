@@ -5,16 +5,18 @@ import { useTimelineStore } from '@/store/timelineStore';
 import { useThemeStore } from '@/store/themeStore';
 import { differenceInDays, format, startOfMonth, endOfMonth, eachDayOfInterval, eachMonthOfInterval } from 'date-fns';
 import { clsx } from 'clsx';
-import { Flag } from 'lucide-react';
+import { Flag, Pencil, Trash2 } from 'lucide-react';
 
 const PIXELS_PER_DAY_MONTH_VIEW = 4;
 const PIXELS_PER_DAY_DAY_VIEW = 40;
 
 interface TimelineContainerProps {
     onMilestoneClick?: (milestone: any) => void;
+    onRowEdit?: (row: any) => void;
+    onRowDelete?: (rowId: string) => void;
 }
 
-export function TimelineContainer({ onMilestoneClick }: TimelineContainerProps) {
+export function TimelineContainer({ onMilestoneClick, onRowEdit, onRowDelete }: TimelineContainerProps) {
     const { rows, milestones, viewMode, startDate, endDate } = useTimelineStore();
     const { primaryColor, secondaryColor, accentColor, backgroundColor } = useThemeStore();
 
@@ -65,6 +67,29 @@ export function TimelineContainer({ onMilestoneClick }: TimelineContainerProps) 
                                 <span className={clsx("truncate block w-full", row.type === 'phase' ? "font-bold text-gray-900" : "text-sm text-gray-600 pl-4")}>
                                     {row.title}
                                 </span>
+
+                                {/* Edit/Delete Buttons - Show on hover */}
+                                <div className="absolute right-8 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {onRowEdit && (
+                                        <button
+                                            onClick={() => onRowEdit(row)}
+                                            className="p-1 hover:bg-blue-100 rounded transition-colors"
+                                            title="Edit item"
+                                        >
+                                            <Pencil size={14} className="text-blue-600" />
+                                        </button>
+                                    )}
+                                    {onRowDelete && (
+                                        <button
+                                            onClick={() => onRowDelete(row.id)}
+                                            className="p-1 hover:bg-red-100 rounded transition-colors"
+                                            title="Delete item"
+                                        >
+                                            <Trash2 size={14} className="text-red-600" />
+                                        </button>
+                                    )}
+                                </div>
+
                                 {/* Row Handle */}
                                 <div
                                     className={clsx(

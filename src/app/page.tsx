@@ -5,20 +5,23 @@ import { ThemeUploader } from "@/components/upload/ThemeUploader";
 import { TimelineContainer } from "@/components/timeline/TimelineContainer";
 import { ExcelImport } from "@/components/upload/ExcelImport";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Layout, Palette } from "lucide-react";
+import { Download, Plus, Layout, Palette, ListPlus } from "lucide-react";
 import { exportToPPTX } from "@/lib/exportUtils";
 import { useTimelineStore } from "@/store/timelineStore";
 import { useThemeStore } from "@/store/themeStore";
 import { MilestoneDialog } from "@/components/timeline/MilestoneDialog";
-import { Milestone } from "@/types/timeline";
+import { ProjectItemDialog } from "@/components/timeline/ProjectItemDialog";
+import { Milestone, TimelineRow } from "@/types/timeline";
 
 export default function Home() {
-  const { rows, milestones, startDate, endDate, viewMode, setViewMode, addMilestone, updateMilestone, deleteMilestone } = useTimelineStore();
+  const { rows, milestones, startDate, endDate, viewMode, setViewMode, addMilestone, updateMilestone, deleteMilestone, addRow, updateRow, deleteRow } = useTimelineStore();
   const theme = useThemeStore();
 
   const [isMilestoneDialogOpen, setIsMilestoneDialogOpen] = useState(false);
   const [isThemeDialogOpen, setIsThemeDialogOpen] = useState(false);
+  const [isProjectItemDialogOpen, setIsProjectItemDialogOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<Milestone | undefined>(undefined);
+  const [editingProjectItem, setEditingProjectItem] = useState<TimelineRow | undefined>(undefined);
 
   const handleExport = () => {
     exportToPPTX(rows, milestones, theme, startDate, endDate);
@@ -50,6 +53,30 @@ export default function Home() {
     deleteMilestone(id);
   };
 
+  const handleAddProjectItem = () => {
+    setEditingProjectItem(undefined);
+    setIsProjectItemDialogOpen(true);
+  };
+
+  const handleRowEdit = (row: TimelineRow) => {
+    setEditingProjectItem(row);
+    setIsProjectItemDialogOpen(true);
+  };
+
+  const handleRowDelete = (rowId: string) => {
+    if (confirm('Are you sure you want to delete this project item?')) {
+      deleteRow(rowId);
+    }
+  };
+
+  const handleSaveProjectItem = (data: any) => {
+    if (data.id) {
+      updateRow(data.id, data);
+    } else {
+      addRow(data);
+    }
+  };
+
   return (
     <main className="h-screen p-4 bg-gray-50 flex flex-col overflow-hidden">
       <div className="w-full h-full flex flex-col space-y-4">
@@ -67,6 +94,9 @@ export default function Home() {
             <Button variant="outline" onClick={toggleView} className="gap-2">
               <Layout size={16} /> {viewMode === 'day' ? 'Month View' : 'Day View'}
             </Button>
+            <Button variant="outline" onClick={handleAddProjectItem} className="gap-2">
+              <ListPlus size={16} /> Add Item
+            </Button>
             <Button variant="outline" onClick={handleAddMilestone} className="gap-2">
               <Plus size={16} /> Milestone
             </Button>
@@ -78,7 +108,11 @@ export default function Home() {
 
         {/* Timeline Area (Expanded) */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 flex-1 overflow-hidden relative">
-          <TimelineContainer onMilestoneClick={handleMilestoneClick} />
+          <TimelineContainer
+            onMilestoneClick={handleMilestoneClick}
+            onRowEdit={handleRowEdit}
+            onRowDelete={handleRowDelete}
+          />
         </div>
 
         <ThemeUploader
@@ -92,6 +126,14 @@ export default function Home() {
           onSave={handleSaveMilestone}
           onDelete={handleDeleteMilestone}
           milestone={editingMilestone}
+        />
+
+        <ProjectItemDialog
+          isOpen={isProjectItemDialogOpen}
+          onClose={() => setIsProjectItemDialogOpen(false)}
+          onSave={handleSaveProjectItem}
+          onDelete={handleRowDelete}
+          item={editingProjectItem}
         />
       </div>
     </main>
