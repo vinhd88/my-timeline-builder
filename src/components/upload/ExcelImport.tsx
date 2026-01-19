@@ -3,7 +3,7 @@
 import React, { useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
-import { Upload } from 'lucide-react';
+import { Upload, Download } from 'lucide-react';
 import { useTimelineStore } from '@/store/timelineStore';
 import { useThemeStore } from '@/store/themeStore';
 import { TimelineRow } from '@/types/timeline';
@@ -123,8 +123,67 @@ export function ExcelImport() {
         }
     };
 
+    const handleDownloadTemplate = () => {
+        // Create sample data with proper structure
+        const sampleData = [
+            {
+                "Project item": "Project Phase 1",
+                "Start Date": "2026-02-01",
+                "End Date": "2026-04-30",
+                "Level": 1
+            },
+            {
+                "Project item": "Design & Planning",
+                "Start Date": "2026-02-01",
+                "End Date": "2026-02-28",
+                "Level": 2
+            },
+            {
+                "Project item": "Requirements Gathering",
+                "Start Date": "2026-02-01",
+                "End Date": "2026-02-15",
+                "Level": 3
+            },
+            {
+                "Project item": "UI/UX Design",
+                "Start Date": "2026-02-16",
+                "End Date": "2026-02-28",
+                "Level": 3
+            },
+            {
+                "Project item": "Development",
+                "Start Date": "2026-03-01",
+                "End Date": "2026-04-15",
+                "Level": 2
+            },
+            {
+                "Project item": "Testing & QA",
+                "Start Date": "2026-04-16",
+                "End Date": "2026-04-30",
+                "Level": 2
+            }
+        ];
+
+        // Create worksheet from sample data
+        const worksheet = XLSX.utils.json_to_sheet(sampleData);
+
+        // Create workbook and add worksheet
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Timeline Data");
+
+        // Download the file
+        XLSX.writeFile(workbook, "timeline_template.xlsx");
+    };
+
     return (
         <>
+            <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleDownloadTemplate}
+            >
+                <Download size={16} /> Download Template
+            </Button>
             <Button
                 variant="outline"
                 className="gap-2"
