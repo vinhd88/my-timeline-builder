@@ -27,9 +27,7 @@ export default function Home() {
     exportToPPTX(rows, milestones, theme, startDate, endDate);
   };
 
-  const toggleView = () => {
-    setViewMode(viewMode === 'day' ? 'month' : 'day');
-  };
+
 
   const handleAddMilestone = () => {
     setEditingMilestone(undefined);
@@ -91,8 +89,8 @@ export default function Home() {
             <Button variant="outline" onClick={() => setIsThemeDialogOpen(true)} className="gap-2">
               <Palette size={16} /> Theme
             </Button>
-            <Button variant="outline" onClick={toggleView} className="gap-2">
-              <Layout size={16} /> {viewMode === 'day' ? 'Month View' : 'Day View'}
+            <Button variant="outline" onClick={() => setViewMode(viewMode === 'month' ? 'week-part' : 'month')} className="gap-2">
+              <Layout size={16} /> {viewMode === 'month' ? '4-Week View' : 'Standard View'}
             </Button>
             <Button variant="outline" onClick={handleAddProjectItem} className="gap-2">
               <ListPlus size={16} /> Add Item

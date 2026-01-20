@@ -8,7 +8,7 @@ import { clsx } from 'clsx';
 import { Flag, Pencil, Trash2 } from 'lucide-react';
 
 const PIXELS_PER_DAY_MONTH_VIEW = 4;
-const PIXELS_PER_DAY_DAY_VIEW = 40;
+const MONTH_WIDTH_WEEK_PART_VIEW = 240; // Fixed width for 4-week view (60px per week)
 
 interface TimelineContainerProps {
     onMilestoneClick?: (milestone: any) => void;
@@ -20,24 +20,37 @@ export function TimelineContainer({ onMilestoneClick, onRowEdit, onRowDelete }: 
     const { rows, milestones, viewMode, startDate, endDate } = useTimelineStore();
     const { primaryColor, secondaryColor, accentColor, backgroundColor } = useThemeStore();
 
-    const pixelsPerDay = viewMode === 'month' ? PIXELS_PER_DAY_MONTH_VIEW : PIXELS_PER_DAY_DAY_VIEW;
-
-    const totalDays = differenceInDays(endDate, startDate);
-    const totalWidth = totalDays * pixelsPerDay;
-
-    const getX = (date: Date) => {
-        const days = differenceInDays(date, startDate);
-        return days * pixelsPerDay;
-    };
-
-    const getWidth = (start: Date, end: Date) => {
-        const days = differenceInDays(end, start);
-        return Math.max(days * pixelsPerDay, 2); // Min width 2px
-    };
+    const pixelsPerDay = viewMode === 'month' ? PIXELS_PER_DAY_MONTH_VIEW : 0;
 
     const months = useMemo(() => {
         return eachMonthOfInterval({ start: startDate, end: endDate });
     }, [startDate, endDate]);
+
+    const getDateX = (date: Date) => {
+        if (viewMode === 'week-part') {
+            const monthDiff = (date.getFullYear() - startDate.getFullYear()) * 12 + (date.getMonth() - startDate.getMonth());
+            const daysInMonth = endOfMonth(date).getDate();
+            const dayProgress = Math.min(Math.max(date.getDate() - 1, 0), daysInMonth) / daysInMonth;
+            return (monthDiff * MONTH_WIDTH_WEEK_PART_VIEW) + (dayProgress * MONTH_WIDTH_WEEK_PART_VIEW);
+        }
+
+        const days = differenceInDays(date, startDate);
+        return days * pixelsPerDay;
+    };
+
+    const getX = (date: Date) => Math.max(0, getDateX(date));
+
+    const getWidth = (start: Date, end: Date) => {
+        const startX = getDateX(start);
+        const endX = getDateX(end);
+        return Math.max(endX - startX, 2); // Min width 2px
+    };
+
+    const totalDays = differenceInDays(endDate, startDate);
+
+    const totalWidth = viewMode === 'week-part'
+        ? months.length * MONTH_WIDTH_WEEK_PART_VIEW
+        : totalDays * pixelsPerDay;
 
     return (
         <div className="w-full h-full border rounded-lg shadow-sm bg-white overflow-auto font-sans relative">
@@ -149,21 +162,61 @@ export function TimelineContainer({ onMilestoneClick, onRowEdit, onRowDelete }: 
                             </div>
 
                             {/* Header (Months) */}
-                            <div className="relative h-10 bg-gray-50 text-sm font-semibold text-gray-700 block border-t border-gray-100">
-                                {months.map((month, index) => {
-                                    const fixedMonthWidth = 120; // Fixed width for all months
-                                    const leftPosition = index * fixedMonthWidth;
+                            <div className="relative">
+                                {/* Month Row */}
+                                <div className="relative h-10 bg-gray-50 text-sm font-semibold text-gray-700 block border-t border-gray-100">
+                                    {months.map((month, index) => {
+                                        const fixedMonthWidth = viewMode === 'week-part' ? MONTH_WIDTH_WEEK_PART_VIEW : 120;
+                                        // For standard view, position might need adjustment if using fixed width per month, 
+                                        // but original logic used getX(startOfMonth). 
+                                        // Original logic for Standard Month View labels was fixed 120px... wait, let's keep original logic for Standard View.
+                                        // The original logic used `index * fixedMonthWidth` which implies uniform width.
+                                        // Let's use getX for Month View label positioning to be safe if widths vary (though months length varies slightly).
+                                        // Actually, original code simplified to fixed 120px. Let's stick to that for now if it works, or clearer:
 
-                                    return (
-                                        <div
-                                            key={month.toISOString()}
-                                            className="absolute border-r flex items-center justify-center px-2 top-0 h-full overflow-hidden whitespace-nowrap"
-                                            style={{ left: leftPosition, width: fixedMonthWidth, backgroundColor: secondaryColor, color: '#fff' }}
-                                        >
-                                            {format(month, 'MMM yyyy')}
-                                        </div>
-                                    );
-                                })}
+                                        const leftPosition = viewMode === 'week-part'
+                                            ? index * MONTH_WIDTH_WEEK_PART_VIEW
+                                            : index * 120; // Original constant
+
+                                        return (
+                                            <div
+                                                key={month.toISOString()}
+                                                className="absolute border-r flex items-center justify-center px-2 top-0 h-full overflow-hidden whitespace-nowrap"
+                                                style={{
+                                                    left: leftPosition,
+                                                    width: viewMode === 'week-part' ? MONTH_WIDTH_WEEK_PART_VIEW : 120,
+                                                    backgroundColor: secondaryColor,
+                                                    color: '#fff'
+                                                }}
+                                            >
+                                                {format(month, 'MMM yyyy')}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Sub-Header (Weeks) - Only in week-part mode */}
+                                {viewMode === 'week-part' && (
+                                    <div className="relative h-8 bg-gray-100 text-xs font-medium text-gray-500 block border-b border-gray-200">
+                                        {months.map((month, monthIndex) => (
+                                            <div key={'weeks-' + month.toISOString()} className="absolute top-0 h-full flex"
+                                                style={{
+                                                    left: monthIndex * MONTH_WIDTH_WEEK_PART_VIEW,
+                                                    width: MONTH_WIDTH_WEEK_PART_VIEW
+                                                }}
+                                            >
+                                                {[1, 2, 3, 4].map((week) => (
+                                                    <div
+                                                        key={`week-${week}`}
+                                                        className="flex-1 border-r border-gray-200 flex items-center justify-center"
+                                                    >
+                                                        Week {week}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -172,13 +225,30 @@ export function TimelineContainer({ onMilestoneClick, onRowEdit, onRowDelete }: 
                         <div className="relative py-2 space-y-1">
                             {/* Grid Background */}
                             <div className="absolute inset-0 z-0 pointer-events-none h-full">
-                                {months.map(month => (
-                                    <div
-                                        key={'grid-' + month.toISOString()}
-                                        className="absolute h-full border-r border-gray-100"
-                                        style={{ left: getX(startOfMonth(month)) }}
-                                    />
-                                ))}
+                                {viewMode === 'week-part' ? (
+                                    // Week-Part Grid (4 columns per month)
+                                    months.map((month, index) => (
+                                        <div key={'grid-' + month.toISOString()} className="absolute h-full flex top-0"
+                                            style={{
+                                                left: index * MONTH_WIDTH_WEEK_PART_VIEW,
+                                                width: MONTH_WIDTH_WEEK_PART_VIEW
+                                            }}
+                                        >
+                                            {[1, 2, 3, 4].map(w => (
+                                                <div key={w} className="flex-1 h-full border-r border-gray-100" />
+                                            ))}
+                                        </div>
+                                    ))
+                                ) : (
+                                    // Standard Month Grid (start of each month)
+                                    months.map(month => (
+                                        <div
+                                            key={'grid-' + month.toISOString()}
+                                            className="absolute h-full border-r border-gray-100"
+                                            style={{ left: getX(startOfMonth(month)) }}
+                                        />
+                                    ))
+                                )}
                             </div>
 
                             {rows.map((row) => {

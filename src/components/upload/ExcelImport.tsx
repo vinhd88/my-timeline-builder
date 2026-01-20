@@ -31,12 +31,17 @@ export function ExcelImport() {
         reader.onload = (e) => {
             const data = e.target?.result;
             if (data) {
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                // Read without cellDates to keep serial numbers initially
+                const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
 
-                // Convert to JSON
-                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                // Convert to JSON with forced date formatting
+                // raw: false ensures we get strings matching the dateNF format
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                    raw: false,
+                    dateNF: 'yyyy-mm-dd'
+                });
 
                 processData(jsonData);
             }
@@ -57,8 +62,90 @@ export function ExcelImport() {
 
             if (!rawStartDate || !rawEndDate) return;
 
-            const startDate = new Date(rawStartDate);
-            const endDate = new Date(rawEndDate);
+            // Parse date strings "YYYY-MM-DD" directly
+            // This is robust because it bypasses Excel serial->Date conversion ambiguities
+            const parseDateString = (dateStr: string): Date | null => {
+                console.log('Parsing date string:', dateStr);
+                if (typeof dateStr !== 'string') {
+                    // Fallback if something weird happened and we got a number/object
+                    // (Shouldn't happen with raw: false, but good safety)
+                    console.warn('Expected string date, got:', typeof dateStr, dateStr);
+                    try {
+                        return new Date(dateStr);
+                    } catch (e) {
+                        return null;
+                    }
+                }
+
+                const cleanStr = dateStr.trim();
+
+                // 1. Try YYYY-MM-DD (Standard ISO)
+                if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(cleanStr)) {
+                    const [y, m, d] = cleanStr.split('-').map(Number);
+                    return new Date(y, m - 1, d, 12, 0, 0, 0);
+                }
+
+                // 2. Try DD-MMM-YYYY (e.g. 20-Jan-2026)
+                // Case-insensitive match for month names
+                const mmmMatch = cleanStr.match(/^(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{4})$/i);
+                if (mmmMatch) {
+                    const d = parseInt(mmmMatch[1], 10);
+                    const mStr = mmmMatch[2].toLowerCase();
+                    const y = parseInt(mmmMatch[3], 10);
+
+                    const months: { [key: string]: number } = {
+                        jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+                        jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+                    };
+                    return new Date(y, months[mStr], d, 12, 0, 0, 0);
+                }
+
+                // 3. Try Slash Formats: DD/MM/YYYY or MM/DD/YYYY
+                const slashParts = cleanStr.split('/');
+                if (slashParts.length === 3) {
+                    const v1 = parseInt(slashParts[0], 10);
+                    const v2 = parseInt(slashParts[1], 10);
+                    const y = parseInt(slashParts[2], 10);
+
+                    if (!isNaN(v1) && !isNaN(v2) && !isNaN(y)) {
+                        // Logic to distinguish DD/MM vs MM/DD
+
+                        // If 2nd part > 12, it MUST be the Day -> MM/DD/YYYY
+                        // (Because Month cannot be > 12)
+                        if (v2 > 12) {
+                            // MM/DD/YYYY: v1 = Month, v2 = Day
+                            return new Date(y, v1 - 1, v2, 12, 0, 0, 0);
+                        }
+
+                        // If 1st part > 12, it MUST be the Day -> DD/MM/YYYY
+                        // (Because Month cannot be > 12)
+                        if (v1 > 12) {
+                            // DD/MM/YYYY: v1 = Day, v2 = Month
+                            return new Date(y, v2 - 1, v1, 12, 0, 0, 0);
+                        }
+
+                        // If both are <= 12, it is ambiguous (e.g. 01/05/2026).
+                        // Supported formats priority:
+                        // 1. DD-MMM-YYYY
+                        // 2. DD/MM/YYYY  <-- We prioritize this
+                        // 3. MM/DD/YYYY
+
+                        // Default to DD/MM/YYYY
+                        return new Date(y, v2 - 1, v1, 12, 0, 0, 0);
+                    }
+                }
+
+                // Fallback for other formats supported natively
+                return new Date(dateStr);
+            };
+
+            const startDate = parseDateString(rawStartDate);
+            const endDate = parseDateString(rawEndDate);
+
+            if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                console.error('Invalid date parsed:', { rawStartDate, rawEndDate, startDate, endDate });
+                return;
+            }
 
             // Generate a random ID
             const id = Math.random().toString(36).substring(2, 9);
@@ -100,7 +187,7 @@ export function ExcelImport() {
                 isExpanded
             };
 
-            console.log(`Creating row: ${title}, type: ${type}, level: ${level}, color: ${color}, primaryColor: ${primaryColor}, secondaryColor: ${secondaryColor}, tertiaryColor: ${tertiaryColor}`);
+            console.log(`Creating row: ${title}, dates: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`);
 
             newRows.push(timelineRow);
         });

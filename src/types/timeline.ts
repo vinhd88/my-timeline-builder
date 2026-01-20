@@ -20,7 +20,7 @@ export interface Milestone {
     color?: string;
 }
 
-export type ViewMode = 'day' | 'month' | 'quarter' | 'year';
+export type ViewMode = 'month' | 'week-part' | 'quarter' | 'year';
 
 export interface DragItem {
     type: 'row' | 'row-resize' | 'milestone';
