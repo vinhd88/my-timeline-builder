@@ -57,7 +57,7 @@ export function TimelineContainer({ onMilestoneClick, onRowEdit, onRowDelete }: 
                     </div>
 
                     {/* Rows List */}
-                    <div className="py-2 space-y-2 bg-white">
+                    <div className="py-2 space-y-1 bg-white">
                         {rows.map(row => {
                             // Calculate indentation based on indent level
                             const getIndentClass = () => {
@@ -169,7 +169,7 @@ export function TimelineContainer({ onMilestoneClick, onRowEdit, onRowDelete }: 
 
 
                         {/* Rows Grid + Bars */}
-                        <div className="relative py-2 space-y-2">
+                        <div className="relative py-2 space-y-1">
                             {/* Grid Background */}
                             <div className="absolute inset-0 z-0 pointer-events-none h-full">
                                 {months.map(month => (

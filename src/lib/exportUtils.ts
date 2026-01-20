@@ -22,7 +22,7 @@ export const exportToPPTX = (
     const HEADER_Y = 0.7 + MILESTONE_AREA_HEIGHT;
     const HEADER_HEIGHT = 0.35;
     const ROW_START_Y = HEADER_Y + HEADER_HEIGHT;
-    const ROW_HEIGHT_INCHES = 0.32;
+    const ROW_HEIGHT_INCHES = 0.22;
     const TEXT_COLOR = theme.textColor.replace('#', '');
     const BG_COLOR = theme.backgroundColor.replace('#', '');
 
