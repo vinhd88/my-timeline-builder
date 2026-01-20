@@ -130,7 +130,16 @@ export const exportToPPTX = (
     rows.forEach((row, index) => {
         const rowY = getY(index);
         const isPhase = row.type === 'phase';
-        const indent = isPhase ? 0 : 0.12;
+
+        // Calculate indent based on row.indent property
+        let indent = 0;
+        if (!isPhase) {
+            if (row.indent === 2) {
+                indent = 0.24; // Level 3: double indent
+            } else if (row.indent === 1) {
+                indent = 0.12; // Level 2: single indent
+            }
+        }
 
         // Left border indicator (vertical pill)
         const indicatorColor = row.color ? row.color.replace('#', '') :

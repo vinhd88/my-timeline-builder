@@ -58,48 +58,58 @@ export function TimelineContainer({ onMilestoneClick, onRowEdit, onRowDelete }: 
 
                     {/* Rows List */}
                     <div className="py-2 space-y-2 bg-white">
-                        {rows.map(row => (
-                            <div
-                                key={row.id}
-                                className="h-10 flex items-center px-4 relative group hover:bg-gray-50 transition-colors"
-                                style={{ borderLeft: `4px solid ${row.type === 'phase' ? (row.color || primaryColor) : 'transparent'}` }}
-                            >
-                                <span className={clsx("truncate block w-full", row.type === 'phase' ? "font-bold text-gray-900" : "text-sm text-gray-600 pl-4")}>
-                                    {row.title}
-                                </span>
+                        {rows.map(row => {
+                            // Calculate indentation based on indent level
+                            const getIndentClass = () => {
+                                if (row.type === 'phase') return '';
+                                if (row.indent === 2) return 'pl-8'; // Level 3: 2rem indent
+                                if (row.indent === 1) return 'pl-4'; // Level 2: 1rem indent
+                                return '';
+                            };
 
-                                {/* Edit/Delete Buttons - Show on hover */}
-                                <div className="absolute right-8 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {onRowEdit && (
-                                        <button
-                                            onClick={() => onRowEdit(row)}
-                                            className="p-1 hover:bg-blue-100 rounded transition-colors"
-                                            title="Edit item"
-                                        >
-                                            <Pencil size={14} className="text-blue-600" />
-                                        </button>
-                                    )}
-                                    {onRowDelete && (
-                                        <button
-                                            onClick={() => onRowDelete(row.id)}
-                                            className="p-1 hover:bg-red-100 rounded transition-colors"
-                                            title="Delete item"
-                                        >
-                                            <Trash2 size={14} className="text-red-600" />
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Row Handle */}
+                            return (
                                 <div
-                                    className={clsx(
-                                        "absolute right-2 top-2 bottom-2 w-1.5 rounded-sm",
-                                        row.type === 'phase' ? "" : "bg-gray-200"
-                                    )}
-                                    style={{ backgroundColor: row.type === 'phase' ? (row.color || primaryColor) : undefined }}
-                                />
-                            </div>
-                        ))}
+                                    key={row.id}
+                                    className="h-10 flex items-center px-4 relative group hover:bg-gray-50 transition-colors"
+                                    style={{ borderLeft: `4px solid ${row.type === 'phase' ? (row.color || primaryColor) : 'transparent'}` }}
+                                >
+                                    <span className={clsx("truncate block w-full", row.type === 'phase' ? "font-bold text-gray-900" : "text-sm text-gray-600", getIndentClass())}>
+                                        {row.title}
+                                    </span>
+
+                                    {/* Edit/Delete Buttons - Show on hover */}
+                                    <div className="absolute right-8 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {onRowEdit && (
+                                            <button
+                                                onClick={() => onRowEdit(row)}
+                                                className="p-1 hover:bg-blue-100 rounded transition-colors"
+                                                title="Edit item"
+                                            >
+                                                <Pencil size={14} className="text-blue-600" />
+                                            </button>
+                                        )}
+                                        {onRowDelete && (
+                                            <button
+                                                onClick={() => onRowDelete(row.id)}
+                                                className="p-1 hover:bg-red-100 rounded transition-colors"
+                                                title="Delete item"
+                                            >
+                                                <Trash2 size={14} className="text-red-600" />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Row Handle */}
+                                    <div
+                                        className={clsx(
+                                            "absolute right-2 top-2 bottom-2 w-1.5 rounded-sm",
+                                            row.type === 'phase' ? "" : "bg-gray-200"
+                                        )}
+                                        style={{ backgroundColor: row.type === 'phase' ? (row.color || primaryColor) : undefined }}
+                                    />
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 

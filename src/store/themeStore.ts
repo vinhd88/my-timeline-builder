@@ -3,6 +3,7 @@ import { create } from 'zustand';
 export interface ThemeState {
     primaryColor: string;
     secondaryColor: string;
+    tertiaryColor: string;
     backgroundColor: string;
     accentColor: string;
     textColor: string;
@@ -16,6 +17,7 @@ export interface ThemeState {
 const DEFAULT_THEME = {
     primaryColor: '#3b82f6', // blue-500
     secondaryColor: '#64748b', // slate-500
+    tertiaryColor: '#94a3b8', // slate-400
     backgroundColor: '#ffffff', // white
     accentColor: '#f59e0b', // amber-500
     textColor: '#0f172a', // slate-900

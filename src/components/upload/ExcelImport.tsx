@@ -13,7 +13,7 @@ export function ExcelImport() {
     const setRows = useTimelineStore((state) => state.setRows);
     const setViewport = useTimelineStore((state) => state.setViewport);
     const clearMilestones = useTimelineStore((state) => state.clearMilestones);
-    const { primaryColor, secondaryColor } = useThemeStore();
+    const { primaryColor, secondaryColor, tertiaryColor } = useThemeStore();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -79,6 +79,15 @@ export function ExcelImport() {
                 indent = 2;
             }
 
+            let color: string;
+            if (type === 'phase') {
+                color = primaryColor;
+            } else if (level === 3) {
+                color = tertiaryColor;
+            } else {
+                color = secondaryColor;
+            }
+
             const timelineRow: TimelineRow = {
                 id,
                 type,
@@ -86,12 +95,12 @@ export function ExcelImport() {
                 startDate,
                 endDate,
                 progress: 0, // Default to 0, or could read from excel if added later
-                color: type === 'phase' ? primaryColor : secondaryColor,
+                color,
                 indent,
                 isExpanded
             };
 
-            console.log(`Creating row: ${title}, type: ${type}, color: ${timelineRow.color}, primaryColor: ${primaryColor}, secondaryColor: ${secondaryColor}`);
+            console.log(`Creating row: ${title}, type: ${type}, level: ${level}, color: ${color}, primaryColor: ${primaryColor}, secondaryColor: ${secondaryColor}, tertiaryColor: ${tertiaryColor}`);
 
             newRows.push(timelineRow);
         });
