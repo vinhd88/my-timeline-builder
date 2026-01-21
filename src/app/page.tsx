@@ -24,7 +24,7 @@ export default function Home() {
   const [editingProjectItem, setEditingProjectItem] = useState<TimelineRow | undefined>(undefined);
 
   const handleExport = () => {
-    exportToPPTX(rows, milestones, theme, startDate, endDate);
+    exportToPPTX(rows, milestones, theme, startDate, endDate, viewMode);
   };
 
 

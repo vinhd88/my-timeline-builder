@@ -1,5 +1,5 @@
 import pptxgen from "pptxgenjs";
-import { TimelineRow, Milestone } from "@/types/timeline";
+import { TimelineRow, Milestone, ViewMode } from "@/types/timeline";
 import { ThemeState } from "@/store/themeStore";
 import { format, differenceInDays, eachMonthOfInterval, startOfMonth, endOfMonth } from "date-fns";
 
@@ -8,7 +8,8 @@ export const exportToPPTX = (
     milestones: Milestone[],
     theme: ThemeState,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    viewMode: ViewMode
 ) => {
     const pres = new pptxgen();
     const slide = pres.addSlide();
@@ -20,8 +21,13 @@ export const exportToPPTX = (
     const GRAPH_WIDTH = TOTAL_WIDTH_INCHES - GRAPH_START_X - 0.15;
     const MILESTONE_AREA_HEIGHT = 0.65;
     const HEADER_Y = 0.7 + MILESTONE_AREA_HEIGHT;
-    const HEADER_HEIGHT = 0.35;
-    const ROW_START_Y = HEADER_Y + HEADER_HEIGHT;
+
+    // Adjust header height based on view mode (taller for week-part to fit sub-headers)
+    const MONTH_HEADER_HEIGHT = 0.30;
+    const SUB_HEADER_HEIGHT = viewMode === 'week-part' ? 0.20 : 0;
+    const TOTAL_HEADER_HEIGHT = MONTH_HEADER_HEIGHT + SUB_HEADER_HEIGHT;
+
+    const ROW_START_Y = HEADER_Y + TOTAL_HEADER_HEIGHT + 0.05;
     const ROW_HEIGHT_INCHES = 0.22;
     const TEXT_COLOR = theme.textColor.replace('#', '');
     const BG_COLOR = theme.backgroundColor.replace('#', '');
@@ -36,8 +42,26 @@ export const exportToPPTX = (
 
     // --- UTILS ---
     const totalDays = differenceInDays(endDate, startDate);
+    const months = eachMonthOfInterval({ start: startDate, end: endDate });
+    const monthWidth = GRAPH_WIDTH / months.length; // Equal width for all months in week-part (and typically standard too in clean exports, but let's see logic)
 
     const getX = (date: Date) => {
+        if (viewMode === 'week-part') {
+            // Proportional mapping based on months
+            const monthDiff = (date.getFullYear() - startDate.getFullYear()) * 12 + (date.getMonth() - startDate.getMonth());
+            const daysInMonth = endOfMonth(date).getDate();
+            const dayProgress = Math.min(Math.max(date.getDate() - 1, 0), daysInMonth) / daysInMonth;
+
+            // Calculate X based on month index + proportion within month
+            const x = GRAPH_START_X + (monthDiff * monthWidth) + (dayProgress * monthWidth);
+
+            // Clamp to graph bounds
+            if (x < GRAPH_START_X) return GRAPH_START_X;
+            if (x > GRAPH_START_X + GRAPH_WIDTH) return GRAPH_START_X + GRAPH_WIDTH;
+            return x;
+        }
+
+        // Standard linear time mapping
         let days = differenceInDays(date, startDate);
         if (days < 0) days = 0;
         if (days > totalDays) days = totalDays;
@@ -85,37 +109,77 @@ export const exportToPPTX = (
     });
 
     // --- MONTH HEADERS ---
-    const months = eachMonthOfInterval({ start: startDate, end: endDate });
-    const monthWidth = GRAPH_WIDTH / months.length; // Equal width for all months
+    // months constant defined in UTILS now
+    // monthWidth defined in UTILS now
 
     months.forEach((month, index) => {
         const x = GRAPH_START_X + (index * monthWidth);
 
         // Month header cell with secondaryColor background
         slide.addShape(pres.ShapeType.rect, {
-            x: x, y: HEADER_Y, w: monthWidth, h: HEADER_HEIGHT,
+            x: x, y: HEADER_Y, w: monthWidth, h: MONTH_HEADER_HEIGHT,
             fill: { color: theme.secondaryColor.replace('#', '') },
             line: { color: 'FFFFFF', width: 0.5 }
         });
 
         // Month text (white)
         slide.addText(format(month, 'MMM yyyy'), {
-            x: x, y: HEADER_Y, w: monthWidth, h: HEADER_HEIGHT,
+            x: x, y: HEADER_Y, w: monthWidth, h: MONTH_HEADER_HEIGHT,
             fontSize: 8, align: 'center', color: 'FFFFFF',
             valign: 'middle', bold: true
         });
 
-        // Vertical Grid Line
+        // Week Sub-headers (only if week-part)
+        if (viewMode === 'week-part') {
+            const weekWidth = monthWidth / 4;
+            const subHeaderY = HEADER_Y + MONTH_HEADER_HEIGHT;
+
+            for (let i = 0; i < 4; i++) {
+                const wx = x + (i * weekWidth);
+
+                // Week cell
+                slide.addShape(pres.ShapeType.rect, {
+                    x: wx, y: subHeaderY, w: weekWidth, h: SUB_HEADER_HEIGHT,
+                    fill: { color: 'F3F4F6' }, // gray-100
+                    line: { color: 'E5E7EB', width: 0.5 } // gray-200
+                });
+
+                // Week text
+                slide.addText(`Week ${i + 1}`, {
+                    x: wx, y: subHeaderY, w: weekWidth, h: SUB_HEADER_HEIGHT,
+                    fontSize: 6, align: 'center', color: '6B7280', // gray-500
+                    valign: 'middle'
+                });
+
+                // Vertical Grid Line for this week (except first one which is month start)
+                if (i > 0) {
+                    const gridEndY = getY(rows.length) + 0.1;
+                    // Grid line start Y is below the total header
+                    const gridY = HEADER_Y + TOTAL_HEADER_HEIGHT;
+
+                    slide.addShape(pres.ShapeType.line, {
+                        x: wx, y: gridY, w: 0, h: gridEndY - gridY,
+                        line: { color: 'F3F4F6', width: 0.5 } // very light gray for weeks
+                    });
+                }
+            }
+        }
+
+        // Vertical Grid Line (Month Start - stronger line)
         const gridEndY = getY(rows.length) + 0.1;
+        // The month grid line starts below the month header (or sub header matches total height)
+        // Actually, let's have it run through the rows area only
+        const gridY = HEADER_Y + TOTAL_HEADER_HEIGHT;
+
         slide.addShape(pres.ShapeType.line, {
-            x: x, y: HEADER_Y + HEADER_HEIGHT, w: 0, h: gridEndY - (HEADER_Y + HEADER_HEIGHT),
-            line: { color: 'E5E7EB', width: 0.5 }
+            x: x, y: gridY, w: 0, h: gridEndY - gridY,
+            line: { color: 'E5E7EB', width: 0.75 }
         });
     });
 
     // --- LEFT PANEL HEADER ---
     slide.addText("Project Items", {
-        x: 0.1, y: HEADER_Y, w: LEFT_PANEL_WIDTH, h: HEADER_HEIGHT,
+        x: 0.1, y: HEADER_Y, w: LEFT_PANEL_WIDTH, h: TOTAL_HEADER_HEIGHT,
         fontSize: 9, bold: true, color: '374151', valign: 'middle'
     });
 
